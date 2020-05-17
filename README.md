@@ -5,4 +5,4 @@ recieves a set of text files as data, and runs the simulator.
 
 Example of the simulator running in CMD:
 
-![alt text](https://imgur.com/a/KuHMV8s)
+![alt text](https://i.imgur.com/XMYScTl.png)
