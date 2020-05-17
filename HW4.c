@@ -6,6 +6,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+//TERMINAL COLORS
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
 
 /*
 Code Logic: This piece of code reads 3 files for a garage implementation which has (Requests,Repairs,Resources).
@@ -15,14 +24,14 @@ Code Logic: This piece of code reads 3 files for a garage implementation which h
 			the code is built like the tree below, from top to lower leafs
 
 						2594010(carID)                (request level)
-					    /      |      \  <--------thread level 1>
-			    (oil-change)   (tire)  (brake repair)
-                     1         3        5               (repair level)
-                    / \      / | \     /  \ <------------threads level 2>
-				  10  13    13 35 17  13  35           (resources level) 
+						/      |      \  <--------thread level 1>
+				(oil-change)   (tire)  (brake repair)
+					 1         3        5               (repair level)
+					/ \      / | \     /  \ <------------threads level 2>
+				  10  13    13 35 17  13  35           (resources level)
 				  ||||||||||||||||||||||||||
-        -all the threads on this level check semaphores-
-	
+		-all the threads on this level check semaphores-
+
 
 */
 typedef struct Requests { // holds an instance of a car request from file
@@ -81,14 +90,14 @@ resources* res;
 int main(int argc, char** argv) {
 	int i;
 
-	if(argc != 4){printError("Please enter 3 files by this order: requests.txt,repairs.txt,resources.txt");}
+	if (argc != 4) { printError("Please enter 3 files by this order: requests.txt,repairs.txt,resources.txt"); }
 
 	req = readReq(argv[1]); // reads the requests file
 	rep = readRep(argv[2]); // reads the repairs file
 	res = readRes(argv[3]); // reads the resources file
 	pthread_t requestsThreads[amountOfCars], timeThread; // level 1 threads + timer thread
 
-	pthread_mutex_init(&lock, NULL); 
+	pthread_mutex_init(&lock, NULL);
 	pthread_create(&timeThread, NULL, timerF, NULL); // starts the timer with thread
 
 	for (i = 0; i < amountOfResources; i++) { // initializes the semaphores in the resources to their quantity
@@ -105,7 +114,7 @@ int main(int argc, char** argv) {
 
 	freeMemory();
 
-	printf("\n\n**Program finished simulation**\n\n");
+	printf(RED"\n\n**Program finished simulation**\n\n"RESET);
 	exit(0);
 	pthread_join(timeThread, NULL);
 
@@ -123,7 +132,7 @@ void* garage(void* request) { // function recieving the level 1 threads, and sen
 		if (car->time == timer) break; // waits for the car's arrival time.
 	}
 
-	printf("[%d:00][Day:%d] {%d} car has ENTERED the GARAGE\n",timer, Day, car->serialNumber);
+	printf(YEL "[%d:00] [Day:%d]"BLU"{%d}" RESET" car has " CYN "ENTERED" RESET " the GARAGE\n", timer, Day, car->serialNumber);
 
 
 	info.serialNum = car->serialNumber;
@@ -133,8 +142,8 @@ void* garage(void* request) { // function recieving the level 1 threads, and sen
 		pthread_join(repairsThreads[i], NULL);  // doesn't go to the next repair untill first one is finished
 
 	}
-	
-	printf("[%d:00][Day:%d] {%d} car has FINISHED ALL the repairs and left the GARAGE\n",timer, Day, car->serialNumber);
+
+	printf(YEL "[%d:00] [Day:%d]"BLU" {%d} car has "RED "FINISHED"RESET" ALL the repairs and left the GARAGE\n", timer, Day, car->serialNumber);
 
 	return NULL;
 }
@@ -148,7 +157,7 @@ void* repairPlatform(void* info) { // function recieving level 2 threads, and pe
 
 	serviceID = ((CarInGarage*)info)->currentRequest;
 	serialNum = ((CarInGarage*)info)->serialNum;
-	
+
 	for (i = 0; i < amountOfRepairs; i++) { // searches for the specific repair information
 		if (rep[i].ID == serviceID) {
 			nameOfRepair = rep[i].name;
@@ -174,11 +183,11 @@ void* repairPlatform(void* info) { // function recieving level 2 threads, and pe
 
 	pthread_mutex_unlock(&lock); // unlocks so other threads can go fetch resources
 
-	printf("[%d:00][Day:%d] {%d} car has STARTED repair:-%s-\n",timer, Day, serialNum, nameOfRepair);
+	printf(YEL "[%d:00] [Day:%d]"BLU" {%d} car has " GRN "STARTED " RESET " repair:-%s-\n", timer, Day, serialNum, nameOfRepair);
 	sleep(timeForRep);			// sleep for the time needed for the repair
 	releaseResources(resourcesToRelease, rep[i].numOfRes); // releases all resources after finishing the repair
-	printf("[%d:00][Day:%d] {%d} car has FINISHED repair:-%s-\n",timer,Day, serialNum, nameOfRepair);
-	
+	printf(YEL "[%d:00] [Day:%d]"BLU " {%d} car has "MAG"FINISHED "RESET"repair:-%s-\n", timer, Day, serialNum, nameOfRepair);
+
 	free(resourcesThreads);
 	free(resourcesToRelease);
 
@@ -229,7 +238,7 @@ resources* readRes(char* fileName) { // function reading the resources file usin
 		temp[i].garageQuantity = atoi(retrieveData(fd));
 		amountOfResources++;
 		i++;
-		
+
 	}
 	return temp;
 
@@ -268,7 +277,7 @@ repairs* readRep(char* fileName) { // function reading the repairs file using li
 	while (i < size) {
 
 		temp[i].ID = atoi(retrieveData(fd));
-		strcpy(tempBuffer,retrieveData(fd));
+		strcpy(tempBuffer, retrieveData(fd));
 		temp[i].name = (char*)malloc(sizeof(tempBuffer) + 1);
 		strcpy(temp[i].name, tempBuffer);
 		temp[i].hoursNeeded = atoi(retrieveData(fd));
@@ -289,7 +298,7 @@ void printError(char* msg) {
 	exit(1);
 }
 
-void* timerF() { 
+void* timerF() {
 	while (1) {
 		if (timer == 24) {
 			timer = 0;
@@ -303,15 +312,15 @@ void* timerF() {
 char* retrieveData(int fd) { // fetches data from files and generates a string
 	char byteData[2];
 	char* buffer = (char*)malloc(255);
-	strcpy(buffer,"");
+	strcpy(buffer, "");
 
 	read(fd, byteData, 1);
 
-	 do{
-		if (byteData[0] != '\n' && byteData[0] != '\t') { strncat(buffer,byteData,1);}
+	do {
+		if (byteData[0] != '\n' && byteData[0] != '\t') { strncat(buffer, byteData, 1); }
 		read(fd, byteData, 1);
-	}while (byteData[0] != '\t' && byteData[0] != '\n');
-	
+	} while (byteData[0] != '\t' && byteData[0] != '\n');
+
 	return buffer;
 }
 
@@ -323,22 +332,22 @@ int readLines(char* file) { // reads the amount of lines(inputs) from a file
 	while (read(fd, &buffer, 1)) {
 		if (buffer == '\n')lines++;
 	}
-	return lines-1;
+	return lines - 1;
 }
 
-void freeMemory(){
+void freeMemory() {
 	int i;
-	for(i=0;i<amountOfCars;i++){
+	for (i = 0; i < amountOfCars; i++) {
 		free(req[i].requests);
 	}
 	free(req);
-	 for(i=0;i<amountOfRepairs;i++){
-	 	free(rep[i].name);
-	 	free(rep[i].resources);
-	 }
+	for (i = 0; i < amountOfRepairs; i++) {
+		free(rep[i].name);
+		free(rep[i].resources);
+	}
 	free(rep);
-	 for(i=0;i<amountOfResources;i++){
-	 	free(res[i].name);
-	 }
-	 free(res);
+	for (i = 0; i < amountOfResources; i++) {
+		free(res[i].name);
+	}
+	free(res);
 }
